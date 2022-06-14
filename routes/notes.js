@@ -53,4 +53,28 @@ router.post('/addnote',fetchuser,[
    
 }) 
 
+//ROUTE 3:Update an existing note :PUT "/api/auth/getuser" .Login required
+
+
+router.put('/updatenote/:id',fetchuser,async(req,res)=>{
+    const {title,discription,tag}=req.body;
+    //create a newnote object
+    const newNote={};
+    if(title){newNote.title=title};
+    if(discription){newNote.discription=discription};
+    if(tag){newNote.tag=tag};
+
+    //Find the note to be updated and updade it
+    let note=await Note.findById(req.params.id);
+    if(!note){return res.status(404).send("Not Found")};
+
+    //check if the user who is editing the note is the same user that is logged in(or the user whose notes it is, not any other person/hacker is editing it)
+
+    if(note.user.toString()!==req.user.id){
+        return res.status(401).send("Not allowed");
+    }
+    note= await Note.findByIdAndUpdate(req.params.id,{$set:newNote},{new:true})
+    res.json({note})
+})
+
 module.exports=router
