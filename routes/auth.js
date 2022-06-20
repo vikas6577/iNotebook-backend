@@ -22,10 +22,11 @@ router.post(
     }),
   ],
   async (req, res) => {
+    let success=false;
     //if there  are error, return Bad request and the error
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({success, errors: errors.array() });
     }
     // check weather the user with same email exist or not
     try {
@@ -33,7 +34,7 @@ router.post(
       if (user) {
         return res
           .status(400)
-          .json({ error: "Sorry user with the same email already exists" });
+          .json({ success,error: "Sorry user with the same email already exists" });
       }
 
       //salt secpass help in generating a secure password with the help of bcrypt npm hash is generated for the password and instead of actual password hashcode for the password is stored in the database
@@ -57,7 +58,8 @@ router.post(
 
       const authtoken = jwt.sign(data, JWT_SECRET);
       // console.log(authtoken);
-      res.json({ authtoken });
+      success=true;
+      res.json({success, authtoken });
       //instead of sending user data(id password...) we send authtoken in which are data(user id,jwtsecret(our secret message) is taken and converted to token and send to teh user so that in future if someone comes with the same token we can retrieve its userid)
       // res.json({ user });
     } catch (error) {
@@ -76,6 +78,7 @@ router.post(
   ],
   async (req, res) => {
     //if there  are error, return Bad request and the error
+    let success = false;
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -85,6 +88,7 @@ router.post(
     try {
       let user = await User.findOne({ email });
       if (!user) {
+        success=false;
         return res
           .status(400)
           .json({ error: "Please try to login with correct Credential" });
@@ -92,9 +96,8 @@ router.post(
 
       const passwordCompare = await bcrypt.compare(password, user.password);
       if (!passwordCompare) {
-        return res
-          .status(400)
-          .json({ error: "Please try to login with correct Credential" });
+        success = false
+        return res.status(400).json({ success, error: "Please try to login with correct credentials" });
       }
       const data = {
         user: {
@@ -102,7 +105,8 @@ router.post(
         },
       };
       const authtoken = jwt.sign(data, JWT_SECRET);
-      res.json(authtoken);
+      success = true;
+    res.json({ success, authtoken })
     } catch (error) {
       console.error(error.message);
       res.status(500).send("Internal Server error");
